@@ -117,25 +117,52 @@ function computeCanvasSize() {
 }
 
 function setupPermissionButton() {
-  permissionBtn = select('#permission-btn');
+  permissionBtn = document.getElementById('permission-btn');
   if (!permissionBtn) {
     return;
   }
 
-  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-    permissionBtn.removeAttribute('hidden');
-    permissionBtn.mousePressed(async () => {
-      const state = await DeviceMotionEvent.requestPermission();
-      if (state === 'granted') {
-        permissionBtn.attribute('hidden', true);
-      }
-    });
+  const canRequestMotion =
+    typeof DeviceMotionEvent !== 'undefined' &&
+    typeof DeviceMotionEvent.requestPermission === 'function';
+  const canRequestOrientation =
+    typeof DeviceOrientationEvent !== 'undefined' &&
+    typeof DeviceOrientationEvent.requestPermission === 'function';
+
+  if (!canRequestMotion && !canRequestOrientation) {
+    permissionBtn.hidden = true;
+    permissionBtn = null;
+    return;
   }
+
+  permissionBtn.hidden = false;
+  permissionBtn.addEventListener('click', async () => {
+    try {
+      const motionState = canRequestMotion
+        ? await DeviceMotionEvent.requestPermission()
+        : 'granted';
+      const orientationState = canRequestOrientation
+        ? await DeviceOrientationEvent.requestPermission()
+        : 'granted';
+
+      if (motionState === 'granted' && orientationState === 'granted') {
+        permissionBtn.hidden = true;
+      } else {
+        permissionBtn.textContent = 'Tap to Enable Motion';
+      }
+    } catch (err) {
+      console.error('Motion permission request failed', err);
+      permissionBtn.textContent = 'Try Again';
+    }
+  });
 }
 
-function touchStarted() {
-  if (permissionBtn && !permissionBtn.elt.hidden) {
-    permissionBtn.elt.click();
+function touchStarted(event) {
+  if (permissionBtn && !permissionBtn.hidden) {
+    if (!event || !permissionBtn.contains(event.target)) {
+      permissionBtn.click();
+      return false;
+    }
   }
-  return false;
+  return true;
 }
