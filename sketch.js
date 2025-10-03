@@ -5,11 +5,11 @@ let burstActive = false;
 let burstStartedAt = 0;
 const BURST_DURATION = 600; // milliseconds
 const PARTICLE_COUNT = 24;
-let permissionBtn;
 let motionPermissionGranted = false;
-let isRequestingMotionPermission = false;
-let canRequestMotionPermission = false;
-let canRequestOrientationPermission = false;
+let requestingMotionPermission = false;
+let needsMotionPermission = false;
+let permissionOverlay;
+let permissionButton;
 
 function preload() {
   dogeImg = loadImage(DOGE_DATA_URI);
@@ -22,7 +22,7 @@ function setup() {
   imageMode(CENTER);
   angleMode(RADIANS);
   noStroke();
-  setupPermissionButton();
+  setupMotionPrompt();
   setShakeThreshold(15);
 }
 
@@ -123,92 +123,87 @@ function computeCanvasSize() {
   return Math.min(windowWidth, windowHeight) * 0.8;
 }
 
-function setupPermissionButton() {
-  permissionBtn = document.getElementById('permission-btn');
-  if (!permissionBtn) {
-    return;
-  }
+function setupMotionPrompt() {
+  permissionOverlay = document.getElementById('motion-overlay');
+  permissionButton = document.getElementById('motion-btn');
 
-  canRequestMotionPermission =
+  needsMotionPermission =
     typeof DeviceMotionEvent !== 'undefined' &&
     typeof DeviceMotionEvent.requestPermission === 'function';
-  canRequestOrientationPermission =
-    typeof DeviceOrientationEvent !== 'undefined' &&
-    typeof DeviceOrientationEvent.requestPermission === 'function';
 
-  if (!canRequestMotionPermission && !canRequestOrientationPermission) {
-    permissionBtn.hidden = true;
-    permissionBtn = null;
+  if (!needsMotionPermission) {
     motionPermissionGranted = true;
+    hideMotionOverlay();
     return;
   }
 
-  permissionBtn.hidden = false;
-  permissionBtn.addEventListener('click', () => {
-    requestMotionAccess().then((granted) => {
-      if (granted && permissionBtn) {
-        permissionBtn.hidden = true;
-      }
-    });
-  });
+  showMotionOverlay();
 
-  const gestureRequest = () => {
-    requestMotionAccess().then((granted) => {
-      if (granted) {
-        window.removeEventListener('touchend', gestureRequest);
-        window.removeEventListener('mouseup', gestureRequest);
-      }
-    });
+  const requestHandler = () => {
+    requestMotionAccess();
   };
 
-  window.addEventListener('touchend', gestureRequest);
-  window.addEventListener('mouseup', gestureRequest);
+  if (permissionButton) {
+    permissionButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      requestHandler();
+    });
+  }
+
+  window.addEventListener('touchend', requestHandler, { once: true });
+  window.addEventListener('mousedown', requestHandler, { once: true });
 }
 
 async function requestMotionAccess() {
-  if (motionPermissionGranted || isRequestingMotionPermission) {
-    return motionPermissionGranted;
-  }
-
-  if (!canRequestMotionPermission && !canRequestOrientationPermission) {
+  if (!needsMotionPermission) {
     motionPermissionGranted = true;
     return true;
   }
 
-  isRequestingMotionPermission = true;
+  if (motionPermissionGranted || requestingMotionPermission) {
+    return motionPermissionGranted;
+  }
+
+  requestingMotionPermission = true;
 
   try {
-    const motionState = canRequestMotionPermission
-      ? await DeviceMotionEvent.requestPermission()
-      : 'granted';
-    const orientationState = canRequestOrientationPermission
-      ? await DeviceOrientationEvent.requestPermission()
-      : 'granted';
-
-    motionPermissionGranted =
-      motionState === 'granted' && orientationState === 'granted';
+    const state = await DeviceMotionEvent.requestPermission();
+    motionPermissionGranted = state === 'granted';
 
     if (motionPermissionGranted) {
-      if (permissionBtn) {
-        permissionBtn.hidden = true;
-      }
-    } else if (permissionBtn) {
-      permissionBtn.textContent = 'Tap to Enable Motion';
+      hideMotionOverlay();
+    } else {
+      showMotionOverlay('Tap to Enable Motion');
     }
 
     return motionPermissionGranted;
   } catch (err) {
     console.error('Motion permission request failed', err);
-    if (permissionBtn) {
-      permissionBtn.textContent = 'Try Again';
-    }
+    showMotionOverlay('Try Again');
     return false;
   } finally {
-    isRequestingMotionPermission = false;
+    requestingMotionPermission = false;
   }
 }
 
-function touchStarted(event) {
+function showMotionOverlay(label) {
+  if (permissionOverlay) {
+    permissionOverlay.classList.remove('hidden');
+  }
+  if (permissionButton && label) {
+    permissionButton.textContent = label;
+  } else if (permissionButton && !label) {
+    permissionButton.textContent = 'Enable Motion';
+  }
+}
+
+function hideMotionOverlay() {
+  if (permissionOverlay) {
+    permissionOverlay.classList.add('hidden');
+  }
+}
+
+function touchStarted() {
   if (!motionPermissionGranted) {
     requestMotionAccess();
   }

@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div id="motion-overlay" class="motion-overlay hidden">
+      <div class="overlay-content">
+        <p>Tap to enable motion controls</p>
+        <button id="motion-btn">Enable Motion</button>
+      </div>
+    </div>
     <main>
       <section class="canvas-wrapper">
         <div id="sketch-holder"></div>
@@ -15,7 +21,6 @@
       <section class="instructions">
         <h1>Doge Motion Playground</h1>
         <p>Tilt your phone to spin Doge. Shake the phone for a burst of excitement.</p>
-        <button id="permission-btn" hidden>Enable Motion Access</button>
       </section>
     </main>
     <script src="doge-data-uri.js"></script>
