@@ -6,6 +6,10 @@ let burstStartedAt = 0;
 const BURST_DURATION = 600; // milliseconds
 const PARTICLE_COUNT = 24;
 let permissionBtn;
+let motionPermissionGranted = false;
+let isRequestingMotionPermission = false;
+let canRequestMotionPermission = false;
+let canRequestOrientationPermission = false;
 
 function preload() {
   dogeImg = loadImage(DOGE_DATA_URI);
@@ -71,6 +75,9 @@ function deviceShaken() {
 }
 
 function mousePressed() {
+  if (!motionPermissionGranted) {
+    requestMotionAccess();
+  }
   // Handy fallback while testing on desktop.
   triggerBurst();
 }
@@ -122,47 +129,88 @@ function setupPermissionButton() {
     return;
   }
 
-  const canRequestMotion =
+  canRequestMotionPermission =
     typeof DeviceMotionEvent !== 'undefined' &&
     typeof DeviceMotionEvent.requestPermission === 'function';
-  const canRequestOrientation =
+  canRequestOrientationPermission =
     typeof DeviceOrientationEvent !== 'undefined' &&
     typeof DeviceOrientationEvent.requestPermission === 'function';
 
-  if (!canRequestMotion && !canRequestOrientation) {
+  if (!canRequestMotionPermission && !canRequestOrientationPermission) {
     permissionBtn.hidden = true;
     permissionBtn = null;
+    motionPermissionGranted = true;
     return;
   }
 
   permissionBtn.hidden = false;
-  permissionBtn.addEventListener('click', async () => {
-    try {
-      const motionState = canRequestMotion
-        ? await DeviceMotionEvent.requestPermission()
-        : 'granted';
-      const orientationState = canRequestOrientation
-        ? await DeviceOrientationEvent.requestPermission()
-        : 'granted';
-
-      if (motionState === 'granted' && orientationState === 'granted') {
+  permissionBtn.addEventListener('click', () => {
+    requestMotionAccess().then((granted) => {
+      if (granted && permissionBtn) {
         permissionBtn.hidden = true;
-      } else {
-        permissionBtn.textContent = 'Tap to Enable Motion';
       }
-    } catch (err) {
-      console.error('Motion permission request failed', err);
+    });
+  });
+
+  const gestureRequest = () => {
+    requestMotionAccess().then((granted) => {
+      if (granted) {
+        window.removeEventListener('touchend', gestureRequest);
+        window.removeEventListener('mouseup', gestureRequest);
+      }
+    });
+  };
+
+  window.addEventListener('touchend', gestureRequest);
+  window.addEventListener('mouseup', gestureRequest);
+}
+
+async function requestMotionAccess() {
+  if (motionPermissionGranted || isRequestingMotionPermission) {
+    return motionPermissionGranted;
+  }
+
+  if (!canRequestMotionPermission && !canRequestOrientationPermission) {
+    motionPermissionGranted = true;
+    return true;
+  }
+
+  isRequestingMotionPermission = true;
+
+  try {
+    const motionState = canRequestMotionPermission
+      ? await DeviceMotionEvent.requestPermission()
+      : 'granted';
+    const orientationState = canRequestOrientationPermission
+      ? await DeviceOrientationEvent.requestPermission()
+      : 'granted';
+
+    motionPermissionGranted =
+      motionState === 'granted' && orientationState === 'granted';
+
+    if (motionPermissionGranted) {
+      if (permissionBtn) {
+        permissionBtn.hidden = true;
+      }
+    } else if (permissionBtn) {
+      permissionBtn.textContent = 'Tap to Enable Motion';
+    }
+
+    return motionPermissionGranted;
+  } catch (err) {
+    console.error('Motion permission request failed', err);
+    if (permissionBtn) {
       permissionBtn.textContent = 'Try Again';
     }
-  });
+    return false;
+  } finally {
+    isRequestingMotionPermission = false;
+  }
 }
 
 function touchStarted(event) {
-  if (permissionBtn && !permissionBtn.hidden) {
-    if (!event || !permissionBtn.contains(event.target)) {
-      permissionBtn.click();
-      return false;
-    }
+  if (!motionPermissionGranted) {
+    requestMotionAccess();
   }
   return true;
 }
