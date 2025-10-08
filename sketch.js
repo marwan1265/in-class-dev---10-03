@@ -17,8 +17,7 @@ function preload() {
 }
 
 function setup() {
-  canvasSize = computeCanvasSize();
-  const canvas = createCanvas(canvasSize, canvasSize);
+  const canvas = createCanvas(windowWidth, windowHeight);
   canvas.parent('sketch-holder');
   imageMode(CENTER);
   angleMode(RADIANS);
@@ -45,12 +44,6 @@ function draw() {
       spiders.splice(i, 1);
     }
   }
-  
-  // Show spider count in corner
-  fill(138, 43, 226, 150);
-  textAlign(LEFT, TOP);
-  textSize(16);
-  text(`🕷️ Spiders: ${spiders.length}`, 10, 10);
 }
 
 function spawnSpider(x, y) {
@@ -61,13 +54,13 @@ function spawnSpider(x, y) {
   const spider = {
     x: x || random(width),
     y: y || random(height),
-    vx: random(-2, 2),
-    vy: random(-2, 2),
+    vx: random(-0.5, 0.5),
+    vy: random(-0.5, 0.5),
     size: random(40, 80),
     rotation: random(TWO_PI),
-    rotationSpeed: random(-0.05, 0.05),
+    rotationSpeed: random(-0.01, 0.01),
     wiggleOffset: random(TWO_PI),
-    wiggleSpeed: random(0.05, 0.15),
+    wiggleSpeed: random(0.02, 0.05),
     alpha: 255,
     lifespan: random(5000, 10000), // milliseconds
     birthday: millis()
@@ -86,18 +79,18 @@ function updateSpider(spider) {
   
   // Wiggle effect
   spider.wiggleOffset += spider.wiggleSpeed;
-  const wiggle = sin(spider.wiggleOffset) * 2;
-  spider.vx += wiggle * 0.1;
-  spider.vy += wiggle * 0.1;
+  const wiggle = sin(spider.wiggleOffset) * 0.5;
+  spider.vx += wiggle * 0.02;
+  spider.vy += wiggle * 0.02;
   
   // Bounce off edges with some randomness
   if (spider.x < 0 || spider.x > width) {
     spider.vx *= -1;
-    spider.vx += random(-0.5, 0.5);
+    spider.vx += random(-0.1, 0.1);
   }
   if (spider.y < 0 || spider.y > height) {
     spider.vy *= -1;
-    spider.vy += random(-0.5, 0.5);
+    spider.vy += random(-0.1, 0.1);
   }
   
   // Fade out near end of lifespan
@@ -153,9 +146,9 @@ function deviceShaken() {
   
   // Add some chaos - make existing spiders scatter
   for (const spider of spiders) {
-    spider.vx += random(-3, 3);
-    spider.vy += random(-3, 3);
-    spider.rotationSpeed = random(-0.1, 0.1);
+    spider.vx += random(-1, 1);
+    spider.vy += random(-1, 1);
+    spider.rotationSpeed = random(-0.03, 0.03);
   }
 }
 
@@ -185,17 +178,7 @@ function touchStarted() {
 }
 
 function windowResized() {
-  canvasSize = computeCanvasSize();
-  resizeCanvas(canvasSize, canvasSize);
-}
-
-function computeCanvasSize() {
-  const wrapper = document.querySelector('.canvas-wrapper');
-  if (wrapper) {
-    const rect = wrapper.getBoundingClientRect();
-    return Math.min(rect.width, rect.height);
-  }
-  return Math.min(windowWidth, windowHeight) * 0.8;
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 function setupMotionPrompt() {

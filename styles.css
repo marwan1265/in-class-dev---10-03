@@ -4,45 +4,43 @@
 
 body {
   margin: 0;
+  padding: 0;
   font-family: "Helvetica Neue", Arial, sans-serif;
-  background: linear-gradient(180deg, #1a0a1f 0%, #2d1b3d 100%);
+  background: #140a19;
   color: #e0e0e0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  max-width: 480px;
-  width: 100%;
-  padding: 1.5rem;
-}
-
-.canvas-wrapper {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 16px;
-  background: rgba(20, 10, 25, 0.9);
-  box-shadow: 0 10px 30px rgba(138, 43, 226, 0.3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
   overflow: hidden;
-  border: 2px solid rgba(138, 43, 226, 0.4);
+  width: 100vw;
+  height: 100vh;
 }
 
 #sketch-holder {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
+}
+
+#sketch-holder canvas {
+  display: block;
 }
 
 .instructions {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.instructions p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: rgba(138, 43, 226, 0.8);
+  text-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
 }
 
 button {
@@ -59,12 +57,6 @@ button {
 button:active {
   transform: scale(0.97);
   box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.5);
-}
-
-.instructions h1 {
-  margin: 0.5rem 0;
-  font-size: 2rem;
-  text-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
 }
 
 .motion-overlay {
