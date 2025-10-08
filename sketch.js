@@ -31,7 +31,7 @@ function setup() {
 
 function draw() {
   // Dark spooky background
-  background(20, 10, 25);
+  background(0);
   
   // Update and draw all spiders
   for (let i = spiders.length - 1; i >= 0; i--) {
